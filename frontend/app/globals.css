@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Surfaces — warm sand neutrals on a near-white base */
+    --background: 42 33% 98%;
+    --foreground: 215 35% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 35% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 35% 12%;
+
+    /* Primary — deep lake blue */
+    --primary: 205 68% 28%;
+    --primary-foreground: 42 33% 98%;
+
+    /* Secondary — lake/vegetation green */
+    --secondary: 152 38% 42%;
+    --secondary-foreground: 42 33% 98%;
+
+    --muted: 42 18% 93%;
+    --muted-foreground: 215 14% 42%;
+
+    /* Accent — warm sand */
+    --accent: 38 58% 88%;
+    --accent-foreground: 215 35% 12%;
+
+    /* Semantic */
+    --destructive: 4 72% 44%;
+    --destructive-foreground: 42 33% 98%;
+    --success: 142 52% 33%;
+    --success-foreground: 42 33% 98%;
+    --warning: 36 88% 42%;
+    --warning-foreground: 42 33% 98%;
+    --info: 205 70% 38%;
+    --info-foreground: 42 33% 98%;
+
+    --border: 42 18% 87%;
+    --input: 42 18% 84%;
+    --ring: 205 68% 28%;
+
+    /* Lake palette extras for branded surfaces */
+    --lake-deep: 205 72% 20%;
+    --lake-mid: 199 60% 40%;
+    --lake-pale: 197 52% 90%;
+    --reed-green: 140 34% 46%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 210 40% 8%;
+    --foreground: 42 25% 92%;
+
+    --card: 212 36% 11%;
+    --card-foreground: 42 25% 92%;
+
+    --popover: 212 36% 11%;
+    --popover-foreground: 42 25% 92%;
+
+    --primary: 199 60% 48%;
+    --primary-foreground: 210 40% 8%;
+
+    --secondary: 152 36% 48%;
+    --secondary-foreground: 210 40% 8%;
+
+    --muted: 212 28% 18%;
+    --muted-foreground: 42 12% 66%;
+
+    --accent: 38 40% 24%;
+    --accent-foreground: 42 25% 92%;
+
+    --destructive: 4 64% 52%;
+    --destructive-foreground: 42 33% 98%;
+    --success: 142 44% 50%;
+    --success-foreground: 210 40% 8%;
+    --warning: 36 80% 56%;
+    --warning-foreground: 210 40% 8%;
+    --info: 199 60% 52%;
+    --info-foreground: 210 40% 8%;
+
+    --border: 212 24% 22%;
+    --input: 212 24% 26%;
+    --ring: 199 60% 48%;
+
+    --lake-deep: 205 60% 32%;
+    --lake-mid: 199 48% 44%;
+    --lake-pale: 197 36% 26%;
+    --reed-green: 140 28% 44%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

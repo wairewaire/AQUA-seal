@@ -1,0 +1,12 @@
+CREATE TABLE roles (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE);
+CREATE TABLE users (id UUID PRIMARY KEY, phone_number TEXT NOT NULL UNIQUE, email TEXT UNIQUE, password_hash TEXT, role_id BIGINT NOT NULL REFERENCES roles(id), is_active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE bmus (id UUID PRIMARY KEY, name TEXT NOT NULL, region TEXT NOT NULL);
+CREATE TABLE landing_sites (id UUID PRIMARY KEY, bmu_id UUID NOT NULL REFERENCES bmus(id), name TEXT NOT NULL, county TEXT NOT NULL, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION);
+CREATE TABLE fishermen (id UUID PRIMARY KEY, user_id UUID NOT NULL UNIQUE REFERENCES users(id), bmu_id UUID NOT NULL REFERENCES bmus(id), national_id_hash TEXT NOT NULL, full_name TEXT NOT NULL, verified BOOLEAN NOT NULL DEFAULT FALSE);
+CREATE TABLE boats (id UUID PRIMARY KEY, fisherman_id UUID NOT NULL REFERENCES fishermen(id), bmu_id UUID NOT NULL REFERENCES bmus(id), registration_no TEXT NOT NULL UNIQUE, boat_type TEXT NOT NULL);
+CREATE TABLE fish_batches (id UUID PRIMARY KEY, batch_code TEXT NOT NULL UNIQUE, fisherman_id UUID NOT NULL REFERENCES fishermen(id), boat_id UUID NOT NULL REFERENCES boats(id), bmu_id UUID NOT NULL REFERENCES bmus(id), landing_site_id UUID NOT NULL REFERENCES landing_sites(id), species TEXT NOT NULL, weight_kg NUMERIC(10,2) NOT NULL CHECK (weight_kg > 0), harvest_method TEXT NOT NULL, landing_time TIMESTAMPTZ NOT NULL, status TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE trace_events (id UUID PRIMARY KEY, batch_id UUID NOT NULL REFERENCES fish_batches(id), actor_id UUID REFERENCES users(id), event_type TEXT NOT NULL, metadata JSONB NOT NULL DEFAULT '{}'::jsonb, previous_hash TEXT NOT NULL, event_hash TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX trace_events_batch_created_idx ON trace_events(batch_id, created_at);
+CREATE TABLE ussd_sessions (session_id TEXT PRIMARY KEY, phone_number TEXT NOT NULL, current_step TEXT NOT NULL, temp_data JSONB NOT NULL DEFAULT '{}'::jsonb, expires_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE notifications (id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES users(id), channel TEXT NOT NULL, message TEXT NOT NULL, status TEXT NOT NULL, sent_at TIMESTAMPTZ);
+CREATE TABLE audit_logs (id UUID PRIMARY KEY, actor_id UUID REFERENCES users(id), action TEXT NOT NULL, details JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
