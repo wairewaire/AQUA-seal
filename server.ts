@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import path from 'path';
 import { LANDING_SITES, SPECIES_CATALOG } from './src/types/aqua-seal';
 import { storageAdapter } from './src/lib/storage-adapter';
 
@@ -287,6 +288,7 @@ async function startServer() {
 
   // Vite middleware for development vs static production serving
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
