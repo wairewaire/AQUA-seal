@@ -269,6 +269,38 @@ export function VerificationResultCard({ result }: VerificationResultCardProps) 
               Record updated {formatRelative(batch.updatedAt)}.
             </span>
           </p>
+
+          {/* Blockchain Proof Seal Card */}
+          {(result.blockchainProof || batch.blockchain) && (
+            <div className="rounded-lg border border-emerald-300 bg-emerald-50/80 p-3.5 space-y-2 dark:bg-emerald-950/40">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  Public Blockchain Proof Seal
+                </span>
+                <span className="font-mono text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded dark:bg-emerald-900 dark:text-emerald-200">
+                  Block #{(result.blockchainProof || batch.blockchain)?.blockIndex}
+                </span>
+              </div>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                This BMU data entry is permanently locked on the blockchain ledger. It is immutable and visible to anyone.
+              </p>
+              <div className="space-y-1 font-mono text-[10px] text-emerald-950 dark:text-emerald-100 bg-emerald-100/70 dark:bg-emerald-900/60 p-2.5 rounded break-all border border-emerald-200 dark:border-emerald-800">
+                <div>
+                  <span className="font-semibold text-emerald-800 dark:text-emerald-400">SHA-256 DATA HASH:</span>{' '}
+                  {(result.blockchainProof || batch.blockchain)?.dataHash}
+                </div>
+                <div>
+                  <span className="font-semibold text-emerald-800 dark:text-emerald-400">PREVIOUS BLOCK HASH:</span>{' '}
+                  {(result.blockchainProof || batch.blockchain)?.previousHash}
+                </div>
+                <div>
+                  <span className="font-semibold text-emerald-800 dark:text-emerald-400">SEALED BY:</span>{' '}
+                  {(result.blockchainProof || batch.blockchain)?.bmuName || 'BMU Station'} ({(result.blockchainProof || batch.blockchain)?.sealedByRole})
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

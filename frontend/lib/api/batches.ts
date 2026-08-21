@@ -1,5 +1,6 @@
 import type {
   ApiError,
+  BlockchainBlock,
   DashboardSummary,
   FishBatch,
   FreshnessRating,
@@ -12,6 +13,10 @@ import {
   mockLandingSites,
   mockSpecies,
 } from '@/lib/mock/data';
+import {
+  getBlockForBatch,
+  sealBatchOnBlockchain,
+} from '@/lib/blockchain/ledger';
 import {
   ApiRequestError,
   delay,
@@ -119,14 +124,21 @@ function buildVerificationResult(batch: FishBatch): VerificationResult {
     .filter((e) => e.type === 'inspected')
     .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0];
 
+  const blockchainProof = getBlockForBatch(batch.id) || batch.blockchain;
+
   return {
-    batch,
+    batch: {
+      ...batch,
+      blockchain: blockchainProof,
+    },
     species,
     landingSite,
     trustScore,
     trustSummary: trustSummary(batch, trustScore),
     lastVerifiedAt: lastInspection?.occurredAt ?? null,
     flags,
+    blockchainProof,
+    isChainVerified: Boolean(blockchainProof?.isImmutable),
   };
 }
 
@@ -135,13 +147,18 @@ function buildVerificationResult(batch: FishBatch): VerificationResult {
 // ---------------------------------------------------------------------------
 
 export async function getBatches(): Promise<FishBatch[]> {
-  return delay([...mockBatches]);
+  const enriched = mockBatches.map((b) => ({
+    ...b,
+    blockchain: getBlockForBatch(b.id) || b.blockchain,
+  }));
+  return delay([...enriched]);
 }
 
 export async function getBatchById(id: string): Promise<FishBatch> {
   const batch = lookupBatch(id);
   if (!batch) return delayError(notFoundError('Batch', id));
-  return delay({ ...batch });
+  const blockchain = getBlockForBatch(batch.id) || batch.blockchain;
+  return delay({ ...batch, blockchain });
 }
 
 export interface CreateBatchInput {
@@ -161,8 +178,12 @@ export async function createBatch(input: CreateBatchInput): Promise<FishBatch> {
   }
   const seq = 482917 + mockBatches.length + 1;
   const now = new Date().toISOString();
+  const batchId = `LV-${seq}`;
+
+  const landingSiteName = SITES_BY_ID.get(input.landingSiteId)?.name ?? 'Dunga BMU';
+
   const batch: FishBatch = {
-    id: `LV-${seq}`,
+    id: batchId,
     speciesId: input.speciesId,
     landingSiteId: input.landingSiteId,
     boatId: input.boatId,
@@ -171,21 +192,33 @@ export async function createBatch(input: CreateBatchInput): Promise<FishBatch> {
     landedAt: now,
     freshness: 'grade_a',
     status: 'landed',
-    verification: 'unverified',
+    verification: 'verified',
     handlingEvents: [
       {
-        id: `evt_LV-${seq}_landed_${now}`,
-        batchId: `LV-${seq}`,
+        id: `evt_${batchId}_landed_${now}`,
+        batchId,
         type: 'landed',
         occurredAt: now,
-        location: SITES_BY_ID.get(input.landingSiteId)?.name ?? 'Unknown',
-        actorRole: 'fisher',
-        notes: 'Batch recorded at landing.',
+        location: landingSiteName,
+        actorRole: 'bmu_officer',
+        notes: 'BMU Catch Data Entry recorded & sealed on Blockchain.',
       },
     ],
     createdAt: now,
     updatedAt: now,
   };
+
+  // Seal BMU data entry onto the immutable blockchain ledger
+  const block = await sealBatchOnBlockchain(
+    batch,
+    `bmu_${input.landingSiteId}`,
+    `${landingSiteName} BMU Station`,
+    'bmu_officer'
+  );
+
+  batch.blockchain = block;
+  mockBatches.unshift(batch);
+
   return delay(batch);
 }
 
@@ -216,6 +249,8 @@ export async function updateBatchHandling(
     handlingEvents: [...batch.handlingEvents, event],
     updatedAt: now,
   };
+  const idx = mockBatches.findIndex((b) => b.id === batchId);
+  if (idx !== -1) mockBatches[idx] = updated;
   return delay(updated);
 }
 

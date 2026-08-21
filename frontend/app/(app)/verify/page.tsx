@@ -23,6 +23,7 @@ import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { ErrorState } from '@/components/shared/error-state';
 import { QrScannerMock } from '@/components/verify/qr-scanner-mock';
 import { VerificationResultCard } from '@/components/verify/verification-result-card';
+import { BlockchainLedgerViewer } from '@/components/shared/blockchain-ledger-viewer';
 import { verifyBatch, ApiRequestError } from '@/lib/api/batches';
 import type { VerificationResult } from '@/types';
 
@@ -188,6 +189,11 @@ export default function VerifyPage() {
               <LoadingSkeleton variant="block" className="h-40 w-full" />
             </div>
           )}
+
+          {/* Public Blockchain Ledger Section */}
+          <div className="pt-2">
+            <BlockchainLedgerViewer />
+          </div>
         </div>
       )}
 

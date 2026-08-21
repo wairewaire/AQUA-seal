@@ -117,21 +117,35 @@ type TraceEvent struct {
 	EventHash    string                 `json:"eventHash"`
 }
 
+type BlockchainBlock struct {
+	BlockIndex   int64     `json:"blockIndex"`
+	BatchID      string    `json:"batchId"`
+	Timestamp    time.Time `json:"timestamp"`
+	DataHash     string    `json:"dataHash"`
+	PreviousHash string    `json:"previousHash"`
+	BMUID        string    `json:"bmuId"`
+	BMUName      string    `json:"bmuName,omitempty"`
+	SealedByRole UserRole  `json:"sealedByRole"`
+	IsImmutable  bool      `json:"isImmutable"`
+	Signature    string    `json:"signature"`
+}
+
 type FishBatch struct {
-	ID             string       `json:"id"`
-	BatchCode      string       `json:"batchCode,omitempty"`
-	Species        Species      `json:"species"`
-	LandingSite    LandingSite  `json:"landingSite"`
-	BoatID         string       `json:"boatId"`
-	WeightKg       float64      `json:"weightKg"`
-	HarvestMethod  string       `json:"harvestMethod"`
-	LandedAt       time.Time    `json:"landedAt"`
-	Freshness      string       `json:"freshness"`
-	Status         BatchStatus  `json:"status"`
-	Verification   string       `json:"verification"`
-	HandlingEvents []TraceEvent `json:"handlingEvents"`
-	CreatedAt      time.Time    `json:"createdAt"`
-	UpdatedAt      time.Time    `json:"updatedAt"`
+	ID             string           `json:"id"`
+	BatchCode      string           `json:"batchCode,omitempty"`
+	Species        Species          `json:"species"`
+	LandingSite    LandingSite      `json:"landingSite"`
+	BoatID         string           `json:"boatId"`
+	WeightKg       float64          `json:"weightKg"`
+	HarvestMethod  string           `json:"harvestMethod"`
+	LandedAt       time.Time        `json:"landedAt"`
+	Freshness      string           `json:"freshness"`
+	Status         BatchStatus      `json:"status"`
+	Verification   string           `json:"verification"`
+	HandlingEvents []TraceEvent     `json:"handlingEvents"`
+	Blockchain     *BlockchainBlock `json:"blockchain,omitempty"`
+	CreatedAt      time.Time        `json:"createdAt"`
+	UpdatedAt      time.Time        `json:"updatedAt"`
 }
 
 type PublicVerification struct {

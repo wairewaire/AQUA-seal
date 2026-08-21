@@ -22,6 +22,9 @@ import {
   Snowflake,
   ClipboardCheck,
   Truck,
+  Lock,
+  ShieldCheck,
+  Layers,
 } from 'lucide-react';
 import type {
   FishBatch,
@@ -37,6 +40,7 @@ import {
   updateBatchHandling,
   ApiRequestError,
 } from '@/lib/api/batches';
+import { BlockchainLedgerViewer } from '@/components/shared/blockchain-ledger-viewer';
 import { mockBoats, mockLandingSites, mockSpecies } from '@/lib/mock/data';
 import {
   formatDateTime,
@@ -183,6 +187,11 @@ export default function BmuPage() {
             />
           )}
         </div>
+      </div>
+
+      {/* Public Blockchain Ledger Explorer */}
+      <div className="pt-4">
+        <BlockchainLedgerViewer />
       </div>
     </div>
   );
@@ -538,6 +547,28 @@ function BatchCreatedSuccess({
           <StatusBadge status={batch.status} />
           <FreshnessIndicator rating={batch.freshness} showLabel />
         </div>
+
+        {/* Blockchain Immutability Proof Box */}
+        {batch.blockchain && (
+          <div className="rounded-lg border border-emerald-300 bg-emerald-50/70 p-3.5 space-y-2 dark:bg-emerald-950/30">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                <Lock className="h-4 w-4 text-emerald-600" />
+                Immutable Blockchain Seal
+              </span>
+              <span className="font-mono text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                Block #{batch.blockchain.blockIndex}
+              </span>
+            </div>
+            <p className="text-xs text-emerald-700 dark:text-emerald-400">
+              This data entry has been cryptographically sealed by BMU on the public blockchain. It cannot be edited or modified by anyone.
+            </p>
+            <div className="space-y-1 font-mono text-[10px] text-emerald-900 dark:text-emerald-200 bg-emerald-100/60 dark:bg-emerald-900/50 p-2 rounded break-all">
+              <div><span className="font-semibold text-slate-500">SHA-256 HASH:</span> {batch.blockchain.dataHash}</div>
+              <div><span className="font-semibold text-slate-500">SEAL SIGNATURE:</span> {batch.blockchain.signature}</div>
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex flex-col gap-2 sm:flex-row">

@@ -93,6 +93,19 @@ export interface HandlingEvent {
   coordinates?: { lat: number; lng: number };
 }
 
+export interface BlockchainBlock {
+  blockIndex: number;
+  batchId: string;
+  timestamp: string; // ISO 8601
+  dataHash: string; // SHA-256 hash of batch entry data
+  previousHash: string; // Hash of preceding block in ledger
+  bmuId: string;
+  bmuName?: string;
+  sealedByRole: UserRole;
+  isImmutable: boolean;
+  signature: string;
+}
+
 export interface FishBatch {
   id: string; // human-readable, e.g. "LV-482917"
   speciesId: string;
@@ -105,6 +118,7 @@ export interface FishBatch {
   status: BatchStatus;
   verification: VerificationStatus;
   handlingEvents: HandlingEvent[];
+  blockchain?: BlockchainBlock;
   createdAt: string;
   updatedAt: string;
   // Fisher personal info is intentionally excluded from this model —
@@ -134,6 +148,8 @@ export interface VerificationResult {
   trustSummary: string;
   lastVerifiedAt: string | null;
   flags: VerificationFlag[];
+  blockchainProof?: BlockchainBlock;
+  isChainVerified?: boolean;
 }
 
 export interface VerificationFlag {
