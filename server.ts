@@ -324,13 +324,8 @@ async function startServer() {
   });
 
   // Vite middleware for development vs static production serving
-<<<<<<< HEAD
-  if (process.env.NODE_ENV !== "production") {
-    const { createServer: createViteServer } = await import("vite");
-=======
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
->>>>>>> 088ae349a2787960b98118ea850ae0ca966c84ca
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
