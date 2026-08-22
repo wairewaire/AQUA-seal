@@ -146,7 +146,7 @@ var LANDING_SITES = [
     activeBoatsCount: 60
   }
 ];
-var CreateBatchSchema2 = import_zod.z.object({
+var CreateBatchSchema = import_zod.z.object({
   boatRegistration: import_zod.z.string().min(3, "Boat registration is required"),
   species: import_zod.z.enum(["NILE_PERCH", "TILAPIA", "OMENA", "CATFISH"]),
   landingSiteId: import_zod.z.string().min(1, "Landing site is required"),
@@ -159,7 +159,7 @@ var CreateBatchSchema2 = import_zod.z.object({
   channel: import_zod.z.enum(["USSD", "WEB_OFFLINE_SYNC", "WEB_DESK", "SMS", "WHATSAPP"]).default("WEB_DESK"),
   notes: import_zod.z.string().optional()
 });
-var AppendEventSchema2 = import_zod.z.object({
+var AppendEventSchema = import_zod.z.object({
   batchId: import_zod.z.string().min(4, "Batch ID is required"),
   eventType: import_zod.z.enum([
     "HARVESTED",
@@ -1007,6 +1007,233 @@ var InMemoryStorageAdapter = class {
   }
 };
 var storageAdapter = new InMemoryStorageAdapter();
+
+// src/lib/africas-talking-ussd.ts
+async function handleUSSDRequest(sessionId, serviceCode, phoneNumber, text) {
+  const steps = text ? text.split("*") : [];
+  const rootChoice = steps[0];
+  if (steps.length === 0 || text === "") {
+    const menu = [
+      "CON Welcome to Aqua-Seal Lake Victoria",
+      "1. Register Catch (Fisher/BMU)",
+      "2. Update Cold-Chain & Ice",
+      "3. Verify Fish Batch ID",
+      "4. Record Batch Sale",
+      "5. SACCO Catch & Credit Signal",
+      "6. Beach Indicative Prices (KES/kg)"
+    ].join("\n");
+    return { response: menu, isTerminal: false };
+  }
+  if (rootChoice === "1") {
+    if (steps.length === 1) {
+      return {
+        response: [
+          "CON Select Fish Species:",
+          "1. Nile Perch (Mbuta)",
+          "2. Nile Tilapia (Ngege)",
+          "3. Omena / Dagaa",
+          "4. African Catfish (Mumi)"
+        ].join("\n"),
+        isTerminal: false
+      };
+    }
+    if (steps.length === 2) {
+      return {
+        response: [
+          "CON Select Landing Beach BMU:",
+          "1. Dunga Beach (Kisumu)",
+          "2. Uhanya Beach (Siaya)",
+          "3. Mbita Point (Homa Bay)",
+          "4. Karungu Bay (Migori)"
+        ].join("\n"),
+        isTerminal: false
+      };
+    }
+    if (steps.length === 3) {
+      return {
+        response: "CON Enter Catch Weight in Kg (e.g. 50):",
+        isTerminal: false
+      };
+    }
+    if (steps.length === 4) {
+      const speciesMap = {
+        "1": "NILE_PERCH",
+        "2": "TILAPIA",
+        "3": "OMENA",
+        "4": "CATFISH"
+      };
+      const siteMap = {
+        "1": "site-dunga",
+        "2": "site-uhanya",
+        "3": "site-mbita",
+        "4": "site-karungu"
+      };
+      const species = speciesMap[steps[1]] || "NILE_PERCH";
+      const siteId = siteMap[steps[2]] || "site-dunga";
+      const weightKg = parseFloat(steps[3]) || 25;
+      const boats = await storageAdapter.getRegisteredBoats();
+      if (!boats || boats.length === 0) {
+        return {
+          response: "END Error: No registered boats found for this BMU. Please register your boat first.",
+          isTerminal: true
+        };
+      }
+      const boat = boats.find((b) => b.bmuSiteId === siteId) || boats[0];
+      const newBatch = await storageAdapter.createBatch({
+        boatRegistration: boat.registrationNumber,
+        species,
+        landingSiteId: siteId,
+        harvestMethod: boat.approvedGear,
+        weightKg,
+        temperatureCelsius: 4,
+        iceRatio: "1:1",
+        actorName: boat.captainName,
+        actorPhone: phoneNumber,
+        channel: "USSD"
+      });
+      const smsText = `Aqua-Seal: Batch ${newBatch.batchId} registered. ${weightKg}kg ${newBatch.species} at ${newBatch.landingSiteName}. Verified Lake Fresh! View: https://aqua-seal.lakevictoria.org/verify?b=${newBatch.batchId}`;
+      return {
+        response: `END Catch recorded!
+Batch ID: ${newBatch.batchId}
+Weight: ${weightKg}kg ${newBatch.species}
+SMS confirmation sent to ${phoneNumber}.`,
+        isTerminal: true,
+        smsNotification: {
+          to: phoneNumber,
+          message: smsText
+        }
+      };
+    }
+  }
+  if (rootChoice === "2") {
+    if (steps.length === 1) {
+      return {
+        response: "CON Enter Batch ID to Ice (e.g. LV-DG-20260821-042 or 042):",
+        isTerminal: false
+      };
+    }
+    if (steps.length === 2) {
+      return {
+        response: [
+          "CON Select Ice Ratio & Source:",
+          "1. 1:1 Solar Flake Ice (0-3\xB0C)",
+          "2. 1:2 Crushed Block Ice (4-6\xB0C)",
+          "3. Deep Freezing Re-pack"
+        ].join("\n"),
+        isTerminal: false
+      };
+    }
+    if (steps.length === 3) {
+      const batchInput = steps[1].trim();
+      const batches = await storageAdapter.getAllBatches();
+      let targetBatch = batches.find(
+        (b) => b.batchId.toLowerCase().includes(batchInput.toLowerCase()) || b.id.toLowerCase().includes(batchInput.toLowerCase())
+      );
+      if (!targetBatch && batches.length > 0) {
+        targetBatch = batches[0];
+      }
+      if (!targetBatch) {
+        return { response: "END Error: Batch ID not found.", isTerminal: true };
+      }
+      await storageAdapter.appendEvent({
+        batchId: targetBatch.batchId,
+        eventType: "ICED",
+        actorName: "USSD Cold Chain Handler",
+        actorRole: "COLD_CHAIN_HANDLER",
+        actorPhone: phoneNumber,
+        siteName: targetBatch.landingSiteName,
+        temperatureCelsius: steps[2] === "1" ? 2.5 : 5,
+        iceRatio: "1:1",
+        iceSource: "Solar Ice Depot",
+        channel: "USSD"
+      });
+      return {
+        response: `END Cold-chain verified for ${targetBatch.batchId}!
+Ice added. Freshness score updated to Grade A (Lake Fresh).`,
+        isTerminal: true
+      };
+    }
+  }
+  if (rootChoice === "3") {
+    if (steps.length === 1) {
+      return {
+        response: "CON Enter Batch Code (e.g. 042 or LV-DG-20260821-042):",
+        isTerminal: false
+      };
+    }
+    if (steps.length === 2) {
+      const code = steps[1].trim().toUpperCase();
+      const batches = await storageAdapter.getAllBatches();
+      const batch = batches.find((b) => b.batchId.toUpperCase().includes(code) || b.id.toUpperCase().includes(code));
+      if (!batch) {
+        return {
+          response: `END Batch "${code}" not found. Please verify the 4-digit code on the fish gill tag or paper receipt.`,
+          isTerminal: true
+        };
+      }
+      const sp = SPECIES_CATALOG[batch.species]?.commonName || batch.species;
+      return {
+        response: `END ${batch.batchId} VERIFIED!
+Fish: ${sp} (${batch.currentWeightKg}kg)
+Origin: ${batch.boatName}, ${batch.landingSiteName}
+Freshness: ${batch.freshnessGrade} (${batch.currentTemperatureCelsius}\xB0C)
+Seal: ${batch.qualifiesLakeFreshSeal ? "LAKE FRESH AUTHENTIC" : "STANDARD"}`,
+        isTerminal: true
+      };
+    }
+  }
+  if (rootChoice === "4") {
+    if (steps.length === 1) {
+      return {
+        response: "CON Enter Batch ID sold:",
+        isTerminal: false
+      };
+    }
+    if (steps.length === 2) {
+      return {
+        response: "CON Enter Total Sale Amount in KES:",
+        isTerminal: false
+      };
+    }
+    if (steps.length === 3) {
+      const amount = parseFloat(steps[2]) || 1e4;
+      const directFee = Math.round(amount * 0.015);
+      const net = amount - directFee;
+      return {
+        response: `END Sale Logged!
+Gross: KES ${amount.toLocaleString()}
+Direct Micro-Fee (1.5%): KES ${directFee.toLocaleString()}
+Net Fisher Earning: KES ${net.toLocaleString()}
+Transaction appended to ledger.`,
+        isTerminal: true
+      };
+    }
+  }
+  if (rootChoice === "5") {
+    const signals = await storageAdapter.getSACCOCreditSignals(phoneNumber);
+    return {
+      response: `END SACCO Credit Summary:
+Fisher: ${signals.fisherName}
+3-Mo Catch: ${signals.totalWeightHarvestedKg}kg (${signals.totalLandingsCount} landings)
+Cold-Chain Score: ${signals.coldChainAdherenceRate}%
+Est. Credit Limit: KES ${signals.recommendedCreditLimitKes.toLocaleString()}
+Risk: ${signals.creditRiskBand}`,
+      isTerminal: true
+    };
+  }
+  if (rootChoice === "6") {
+    const lines = [
+      "END Lake Victoria Indicative Beach Rates:",
+      "\u2022 Nile Perch (Mbuta): KES 480 - 520/kg",
+      "\u2022 Nile Tilapia (Ngege): KES 420 - 450/kg",
+      "\u2022 Omena (Dagaa): KES 220 - 240/kg",
+      "\u2022 Catfish (Mumi): KES 350 - 380/kg",
+      "Aqua-Seal Direct Fee: 1.5% (Buyers)"
+    ];
+    return { response: lines.join("\n"), isTerminal: true };
+  }
+  return { response: "END Invalid choice. Please dial again.", isTerminal: true };
+}
 
 // server.ts
 async function startServer() {
