@@ -190,6 +190,30 @@ npm run dev
 
 The application will be accessible at `http://localhost:3000`.
 
+### Running with Docker
+
+#### Using Docker Compose (Recommended)
+```bash
+# Build and start the container in the background
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop the container
+docker compose down
+```
+
+#### Using Docker CLI directly
+```bash
+# Build the Docker image
+docker build -t aqua-seal:latest .
+
+# Run the container mapping port 3000
+docker run -d -p 3000:3000 --name aqua-seal-app aqua-seal:latest
+
+# The application will be accessible at http://localhost:3000
+```
 ```
 
 ## How to Test the Simulators

@@ -1,0 +1,12 @@
+services:
+  aqua-seal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aqua-seal-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { LANDING_SITES } from '../types/aqua-seal';
 import { offlineQueue } from '../lib/offline-queue';
+import type { AppRole } from '../App';
 
 export type ActiveTab =
   | 'REGISTRATION'
@@ -28,6 +29,9 @@ export type ActiveTab =
 interface Props {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  appRole: AppRole;
+  currentUser: { name: string; phone: string };
+  onRoleChange: (role: AppRole) => void;
   selectedSiteId: string;
   setSelectedSiteId: (siteId: string) => void;
   onOpenUSSD: () => void;
@@ -41,6 +45,9 @@ interface Props {
 export const Navbar: React.FC<Props> = ({
   activeTab,
   setActiveTab,
+  appRole,
+  currentUser,
+  onRoleChange,
   selectedSiteId,
   setSelectedSiteId,
   onOpenUSSD,
@@ -102,6 +109,22 @@ export const Navbar: React.FC<Props> = ({
 
         {/* Center / Right controls */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Demo role login */}
+          <div className="flex items-center gap-2 bg-black/20 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs">
+            <span className="text-teal-200 font-medium text-[11px] uppercase tracking-wider">Login:</span>
+            <select
+              value={appRole}
+              onChange={(e) => onRoleChange(e.target.value as AppRole)}
+              className="bg-transparent border-none text-white font-semibold focus:outline-hidden text-xs cursor-pointer"
+              aria-label="Choose demo user role"
+            >
+              <option value="BMU" className="bg-[#004D40] text-white">BMU desk</option>
+              <option value="SELLER" className="bg-[#004D40] text-white">Fisher seller</option>
+              <option value="BUYER" className="bg-[#004D40] text-white">Buyer</option>
+            </select>
+            <span className="hidden xl:inline text-teal-100/70">{currentUser.name}</span>
+          </div>
+
           {/* Landing Site Selector */}
           <div className="flex items-center bg-black/20 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-white">
             <span className="text-teal-200 mr-1.5 font-medium text-[11px] uppercase tracking-wider">
