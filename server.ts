@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
-import { LANDING_SITES, SPECIES_CATALOG } from './src/types/aqua-seal';
 import { storageAdapter } from './src/lib/storage-adapter';
+import { LANDING_SITES, SPECIES_CATALOG, CreateBatchSchema, AppendEventSchema } from './src/types/aqua-seal';
+import { handleUSSDRequest } from './src/lib/africas-talking-ussd';
 
 async function startServer() {
   const app = express();
