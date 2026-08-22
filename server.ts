@@ -1,12 +1,11 @@
-import path from "node:path";
 import express, { Request, Response } from "express";
-import path from "path";
+import path from "node:path";
 import { LANDING_SITES, SPECIES_CATALOG } from "./src/types/aqua-seal";
 import { storageAdapter } from "./src/lib/storage-adapter";
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   // Middleware
   app.use(express.json());
