@@ -22,8 +22,11 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 
 // server.ts
-var import_express = __toESM(require("express"), 1);
+var import_express2 = __toESM(require("express"), 1);
 var import_path = __toESM(require("path"), 1);
+
+// src/server-app.ts
+var import_express = __toESM(require("express"), 1);
 
 // src/types/aqua-seal.ts
 var import_zod = require("zod");
@@ -1009,10 +1012,14 @@ var InMemoryStorageAdapter = class {
 var storageAdapter = new InMemoryStorageAdapter();
 
 // src/lib/africas-talking-ussd.ts
+var ussdSessions = /* @__PURE__ */ new Map();
 async function handleUSSDRequest(sessionId, serviceCode, phoneNumber, text) {
-  const steps = text ? text.split("*") : [];
+  const cleanText = (text ?? "").trim();
+  const steps = cleanText ? cleanText.split("*").filter((part) => part !== "") : [];
   const rootChoice = steps[0];
-  if (steps.length === 0 || text === "") {
+  const session = ussdSessions.get(sessionId) ?? { stage: "root" };
+  if (steps.length === 0 || cleanText === "") {
+    ussdSessions.set(sessionId, { stage: "root" });
     const menu = [
       "CON Welcome to Aqua-Seal Lake Victoria",
       "1. Register Catch (Fisher/BMU)",
@@ -1020,9 +1027,17 @@ async function handleUSSDRequest(sessionId, serviceCode, phoneNumber, text) {
       "3. Verify Fish Batch ID",
       "4. Record Batch Sale",
       "5. SACCO Catch & Credit Signal",
-      "6. Beach Indicative Prices (KES/kg)"
+      "6. Beach Indicative Prices (KES/kg)",
+      "0. Exit"
     ].join("\n");
     return { response: menu, isTerminal: false };
+  }
+  if (rootChoice === "0") {
+    ussdSessions.delete(sessionId);
+    return {
+      response: "END Session ended. Dial *384*2782# to continue.",
+      isTerminal: true
+    };
   }
   if (rootChoice === "1") {
     if (steps.length === 1) {
@@ -1164,7 +1179,9 @@ Ice added. Freshness score updated to Grade A (Lake Fresh).`,
     if (steps.length === 2) {
       const code = steps[1].trim().toUpperCase();
       const batches = await storageAdapter.getAllBatches();
-      const batch = batches.find((b) => b.batchId.toUpperCase().includes(code) || b.id.toUpperCase().includes(code));
+      const batch = batches.find(
+        (b) => b.batchId.toUpperCase().includes(code) || b.id.toUpperCase().includes(code)
+      );
       if (!batch) {
         return {
           response: `END Batch "${code}" not found. Please verify the 4-digit code on the fish gill tag or paper receipt.`,
@@ -1232,13 +1249,15 @@ Risk: ${signals.creditRiskBand}`,
     ];
     return { response: lines.join("\n"), isTerminal: true };
   }
-  return { response: "END Invalid choice. Please dial again.", isTerminal: true };
+  return {
+    response: "END Invalid choice. Please dial again.",
+    isTerminal: true
+  };
 }
 
-// server.ts
-async function startServer() {
+// src/server-app.ts
+function createApiApp() {
   const app = (0, import_express.default)();
-  const PORT = 3e3;
   app.use(import_express.default.json());
   app.use(import_express.default.urlencoded({ extended: true }));
   app.use((req, res, next) => {
@@ -1469,6 +1488,13 @@ async function startServer() {
       res.status(500).json({ success: false, error: err.message });
     }
   });
+  return app;
+}
+
+// server.ts
+async function startServer() {
+  const app = createApiApp();
+  const PORT = 3e3;
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
@@ -1478,7 +1504,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = import_path.default.join(process.cwd(), "dist");
-    app.use(import_express.default.static(distPath));
+    app.use(import_express2.default.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(import_path.default.join(distPath, "index.html"));
     });
